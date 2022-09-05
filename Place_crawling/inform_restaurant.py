@@ -18,11 +18,14 @@ def inform_restaurant(url):
 
     # tag = soup.find("div", "_1kUrA")
 
-    tag = soup.find("div", "_37n49")
-    star, visit, blog = 0, 0, 0
+    tag = soup.find("div", "_20Ivz")
 
-    if tag.find("span", "_1Y6hi _1A8_M"):
-        star = tag.find("span", "_1Y6hi _1A8_M").text[2:][:-2]
+    star, visit, blog = 0, 0, 0
+    try:
+        if tag.find("span", "_1Y6hi _1A8_M"):
+            star = tag.find("span", "_1Y6hi _1A8_M").text[2:][:-2]
+    except:
+        star = 0
 
     if tag.find_all("span", "_1Y6hi"):
         for i in tag.find_all("span", "_1Y6hi"):
@@ -32,6 +35,10 @@ def inform_restaurant(url):
                     visit = int(i.text.split()[-1].replace(",", ""))
                 else:
                     blog = int(i.text.split()[-1].replace(",", ""))
+
+    addres = "표기 안함"
+    if soup.find("span", "_2yqUQ"):
+        addres = soup.find("span", "_2yqUQ").text
 
     # 메뉴
     menu_url = url[:-4] + "menu/list"
@@ -73,6 +80,7 @@ def inform_restaurant(url):
     # 딕셔너리 정의하기
     inform = {}
     inform["name"] = title
+    inform["address"] = addres
     inform["sort"] = sort
     inform["menu"] = ",".join(menu_list)
     try:
