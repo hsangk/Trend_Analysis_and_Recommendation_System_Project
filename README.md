@@ -1,4 +1,4 @@
-# 이미지 및 텍스트 마이닝을 통한 사용자 분석과 장소 추천 서비스 
+# 이미지 및 텍스트 마이닝을 통한 사용자 분석과 장소 추천 서비스 (Trend Analysis and Recommendation System based on Image and TextMining)
 ## Project
 2022-1 데이터사이언스 캡스톤디자인
 
@@ -9,7 +9,8 @@
 4. pandas
 5. numpy
 6. captum
-7. 
+7. matplotlib
+8. sklearn 
 
 ## WebCrawling Dev.
 
@@ -24,129 +25,6 @@ naver_test.py
 kakao_test.py
 ```
 
-```Python
-### Multiprocessing (naver_test.py)
-
-import time
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.chrome.options import Options
-from concurrent.futures import ProcessPoolExecutor
-import os
-import threading
-import pandas as pd
-from naver_reviews import naver_reviews_list
-from search_restaurant_url import restaurant
-from image_crawling import image_crawling
-from inform_restaurant import inform_restaurant
-import warnings
-
-warnings.filterwarnings("ignore")
-
-chrome_options = Options()
-chrome_options.add_argument("--no-sandbox")
-chrome_options.add_argument("--headless")
-
-
-def fetch_review(url):
-    print(f"{os.getpid()} process | {threading.get_ident()} thread, {url}")
-    try:
-        driver = webdriver.Chrome(
-            "/Users/seop/Documents/GitHub/Trend_Analysis_and_Recommendation_System_Project/Place_crawling/chromedriver",
-            chrome_options=chrome_options,
-        )
-        driver.get(url[:-4] + "review/visitor")
-    except:
-        print(url, "| HTTP Error 500: Internal Server Error")
-    return naver_reviews_list(driver, url, 5)
-
-
-def fetch_image_food(url):
-    # print(f"{os.getpid()} process | {threading.get_ident()} thread, {url}")
-    try:
-        driver = webdriver.Chrome(
-            "/Users/seop/Documents/GitHub/Trend_Analysis_and_Recommendation_System_Project/Place_crawling/chromedriver",
-            chrome_options=chrome_options,
-        )
-        driver.get(url[:-4] + "photo?filterType=음식")
-    except:
-        print(url, "| HTTP Error 500: Internal Server Error")
-    return image_crawling(driver, url, 30)
-
-
-def fetch_image_inner(url):
-    # print(f"{os.getpid()} process | {threading.get_ident()} thread, {url}")
-    try:
-        driver = webdriver.Chrome(
-            "/Users/seop/Documents/GitHub/Trend_Analysis_and_Recommendation_System_Project/Place_crawling/chromedriver",
-            chrome_options=chrome_options,
-        )
-        driver.get(url[:-4] + "photo?filterType=내부")
-    except:
-        print(url, "| HTTP Error 500: Internal Server Error")
-    return image_crawling(driver, url, 30)
-
-
-def main():
-    df = pd.DataFrame(
-        columns=[
-            "name",
-            "address",
-            "sort",
-            "menu",
-            "mean_price",
-            "score",
-            "people_give_score",
-            "review_count",
-        ]
-    )
-
-    region_df = pd.read_csv("/Users/seop/Downloads/Report.csv")
-    region_df = region_df.drop(index=[0, 1, 2], axis=0)
-
-    for region in region_df["법정동"][:1]:
-
-        print("현재 지역 :", region)
-        urls = restaurant(region, 3)
-
-        executor = ProcessPoolExecutor(max_workers=10)
-
-        result_rivew = list(executor.map(fetch_review, urls))
-        result_food = list(executor.map(fetch_image_food, urls))
-        result_inner = list(executor.map(fetch_image_inner, urls))
-
-        for idx, url in enumerate(urls):
-            result_df = inform_restaurant(url)
-            df = pd.concat(
-                [df, pd.DataFrame(result_df, index=[idx])], ignore_index=False
-            )
-
-        result = {}
-        result["review_list"] = []
-        result["img_food"] = []
-        result["img_inner"] = []
-
-        for i, j, k in zip(result_rivew, result_food, result_inner):
-
-            result["review_list"].append(i)
-            result["img_food"].append(j)
-            result["img_inner"].append(k)
-
-        result_selenium = pd.DataFrame(result)
-        df = pd.concat([df, result_selenium], axis=1)
-        df.to_csv(f"{region}.csv", encoding="utf-8-sig")
-
-    return df, result_selenium
-
-
-if __name__ == "__main__":
-
-    start = time.time()
-    df, result_selenium = main()
-    end = time.time()
-    print(end - start, " second")
-
-```
 ## WebPage Dev.
 
 ### 실행
@@ -176,62 +54,7 @@ cd myproject
 
 https://heroeswillnotdie.tistory.com/16
 
-- myproject/main/database.py 생성 (중괄호 부분 수정할 것)
-```Python
-## database.py
-from sqlalchemy import create_engine
-import pymysql
-import pandas as pd
-
-db = pymysql.connect(host='{퍼블릭 IPv4 주소}', user='root', password='{password}',
-                    db='{DB명}', charset='utf8mb4')
-
-# localhost에 적용할 경우
-# db = pymysql.connect(host='localhost', user='root', password='{password}',
-#                     db='{DB명}', charset='utf8mb4')
-
-cursor = db.cursor()
-db.commit()
-
-data = pd.read_csv('./main/data/data.csv', encoding='utf-8', index_col=0)
-
-# utfmb48로 이모티콘 등의 문자 인식되지 않는 것 해결
-engine = create_engine('mysql+pymysql://root:{password}@{퍼블릭 IPv4 주소}:3306/{DB명}?charset=utf8mb4')
-# engine = create_engine('mysql+pymysql://root:{password}@localhost:3306/{DB명}?charset=utf8mb4')
-
-conn = engine.connect()
-data.to_sql(name='data', con=engine, if_exists='replace', index=False)
-conn.close()
-
-class Database():
-    def __init__(self):
-        self.db = pymysql.connect(
-                                host='{퍼블릭 IPv4 주소}',
-                                # host='localhost'
-                                user='root',
-                                password='{password}',
-                                db='{DB명}',
-                                charset='utf8'
-                                )
-        self.cursor = self.db.cursor(pymysql.cursors.DictCursor)
-
-    def execute(self, query, args={}):
-        self.cursor.execute(query, args)
-
-    def executeOne(self, query, args={}):
-        self.cursor.execute(query, args)
-        row = self.cursor.fetchone()
-        return row
-
-    def executeAll(self, query, args={}):
-        self.cursor.execute(query, args)
-        row = self.cursor.fetchall()
-        return row
-
-    def commit(self):
-        self.db.commit()
-```
-
+- myproject/main/database.py 생성 
 - 데이터베이스 연동
 ```
 python main/database.py
@@ -246,6 +69,68 @@ python manage.py migrate
 7. runserver
 ```
 python manage.py runserver
+```
+## Image clustering.
+1. 장소 이미지 별 rgb값 클러스터링 -> 대표값 추출 
+```
+3.restaurant_clutering.py
+```
+```
+### 3.restaurant_clustering.py 
+
+def rgb_perc(k_cluster):
+    # width = 300
+    # palette = np.zeros((50, width, 3), np.uint8)
+
+    n_pixels = len(k_cluster.labels_)
+    counter = Counter(k_cluster.labels_)  # count how many pixels per cluster
+    perc = {}
+    for i in counter:
+        perc[i] = np.round(counter[i] / n_pixels, 2)
+    perc = np.array(list(perc.values()))
+
+    # top5 color * perc = average RGB
+    rgb_weight = k_cluster.cluster_centers_.T * perc
+    rgb_avg = np.mean(rgb_weight, axis=1)
+
+    # print('Percentage of color :', perc)
+    # print('Each RGB :', k_cluster.cluster_centers_)
+    # print('Avg_RGB :',rgb_avg)
+    step = 0
+
+    # for idx, centers in enumerate(k_cluster.cluster_centers_):
+    #     palette[:, step:int(step + perc[idx]*width+1), :] = centers
+    #     step += int(perc[idx]*width+1)
+
+    return rgb_avg
+```
+2. 대표 rgb값 기반 장소 클러스터링 
+```
+4.cluter_result.py
+```
+```
+### 4.cluter_result.py
+
+from sklearn.cluster import KMeans
+
+clust_model = KMeans(n_clusters = 5 # 클러스터 갯수
+                     # , n_init=10 # initial centroid를 몇번 샘플링한건지, 데이터가 많으면 많이 돌릴수록 안정화된 결과가 나옴
+                     # , max_iter=500 # KMeans를 몇번 반복 수행할건지, K가 큰 경우 1000정도로 높여준다
+                     # , random_state = 42 # , algorithm='auto'
+                     )
+
+# 생성한 모델로 데이터를 학습
+clust_model.fit(df_f) # unsupervised learning
+
+# 결과 값을 변수에 저장
+centers = clust_model.cluster_centers_ # 각 군집의 중심점
+pred = clust_model.predict(df_f) # 각 예측군집
+print(pd.DataFrame(centers))
+print(pred[:10])
+
+clust_df2 = df_f.copy()
+clust_df2['clust'] = pred
+clust_df2.to_csv('\Inner_image_clustering\\result.csv',index= False)
 ```
 
 ### 결과
