@@ -128,6 +128,7 @@ pred = clust_model.predict(df_f) # 각 예측군집
 print(pd.DataFrame(centers))
 print(pred[:10])
 
+# 결과 데이터 저장 
 clust_df2 = df_f.copy()
 clust_df2['clust'] = pred
 clust_df2.to_csv('\Inner_image_clustering\\result.csv',index= False)
