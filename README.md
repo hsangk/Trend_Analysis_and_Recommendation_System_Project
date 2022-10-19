@@ -1,6 +1,7 @@
 # 이미지 및 텍스트 마이닝을 통한 사용자 분석과 장소 추천 서비스 (Trend Analysis and Recommendation System based on Image and TextMining)
 ## Project
 2022-1 데이터사이언스 캡스톤디자인
+장소의 내부 분위기를 파악하기 위해 이미지 rgb값 클러스터링  
 
 ## Packages
 1. Selenium
